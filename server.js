@@ -6,23 +6,28 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const messages = [];
+const messages = [
+  { message: "Hello", time: Date.now() },
+  { message: "How's it going?", time: Date.now() },
+  { message: "Hope you're enjoying the chat!", time: Date.now() },
+  { message: "Feel free to ask any questions.", time: Date.now() },
+];
 
 wss.on('connection', (socket) => {
-  socket.send(JSON.stringify(messages));
+  let index = 0;
 
-  socket.on('message', (data) => {
-    const message = JSON.parse(data);
-    messages.push({
-      message: message.message,
-      time: Date.now(),
-    });
+  const sendNextMessage = () => {
+    if (index < messages.length) {
+      socket.send(JSON.stringify(messages[index]));
+      index++;
+      setTimeout(sendNextMessage, 30000);
+    }
+  };
 
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify([messages[messages.length - 1]]));
-      }
-    });
+  sendNextMessage();
+
+  socket.on('close', () => {
+    console.log('Connection closed.');
   });
 });
 
